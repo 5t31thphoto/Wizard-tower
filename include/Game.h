@@ -27,7 +27,7 @@ public:
 
   void begin();
   void update();
-  void draw(M5GFX &display);
+  void draw(LovyanGFX &display);
   bool consumeSaveRequest();
 
 private:
@@ -66,17 +66,17 @@ private:
   void startNight();
   void resolveBattle();
   void pickVisitor();
-  void drawHeader(M5GFX &d);
-  void drawTabs(M5GFX &d);
-  void drawWorld(M5GFX &d);
-  void drawShop(M5GFX &d);
-  void drawLab(M5GFX &d);
-  void drawGarden(M5GFX &d);
-  void drawDefense(M5GFX &d);
-  void drawBattle(M5GFX &d);
-  void drawJournal(M5GFX &d);
-  void drawButton(M5GFX &d, int x, int y, int w, int h, const char* label, uint16_t fill);
-  void drawPanel(M5GFX &d, int x, int y, int w, int h, uint16_t fill);
-  void drawTinyVisitor(M5GFX &d, int cx, int cy, uint8_t icon); // procedural 12-16px face/body
-  void drawTinyMonster(M5GFX &d, int x, int y, uint8_t type);
+  void drawHeader(LovyanGFX &d);
+  void drawTabs(LovyanGFX &d);
+  void drawWorld(LovyanGFX &d);
+  void drawShop(LovyanGFX &d);
+  void drawLab(LovyanGFX &d);
+  void drawGarden(LovyanGFX &d);
+  void drawDefense(LovyanGFX &d);
+  void drawBattle(LovyanGFX &d);
+  void drawJournal(LovyanGFX &d);
+  void drawButton(LovyanGFX &d, int x, int y, int w, int h, const char* label, uint16_t fill);
+  void drawPanel(LovyanGFX &d, int x, int y, int w, int h, uint16_t fill);
+  void drawTinyVisitor(LovyanGFX &d, int cx, int cy, uint8_t icon);
+  void drawTinyMonster(LovyanGFX &d, int x, int y, uint8_t type);
 };
