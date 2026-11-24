@@ -44,12 +44,12 @@ bool Game::consumeSaveRequest() {
   return v;
 }
 
-void Game::drawPanel(M5GFX& d, int x, int y, int w, int h, uint16_t fill) {
+void Game::drawPanel(LovyanGFX& d, int x, int y, int w, int h, uint16_t fill) {
   d.fillRoundRect(x, y, w, h, 5, fill);
   d.drawRoundRect(x, y, w, h, 5, 0x7B6D);
 }
 
-void Game::drawButton(M5GFX& d, int x, int y, int w, int h, const char* label, uint16_t fill) {
+void Game::drawButton(LovyanGFX& d, int x, int y, int w, int h, const char* label, uint16_t fill) {
   d.fillRoundRect(x, y, w, h, 4, fill);
   d.drawRoundRect(x, y, w, h, 4, COL_CREAM);
   d.setTextColor(COL_CREAM, fill);
@@ -57,7 +57,7 @@ void Game::drawButton(M5GFX& d, int x, int y, int w, int h, const char* label, u
 }
 
 // Tiny procedural visitor (roughly 14-18 px tall)
-void Game::drawTinyVisitor(M5GFX& d, int cx, int cy, uint8_t icon) {
+void Game::drawTinyVisitor(LovyanGFX& d, int cx, int cy, uint8_t icon) {
   // Real extracted sprites from the user's art sheets
   static const uint16_t* const table[] = {
     RealSprites::mara,          // 0 Mara
@@ -79,13 +79,13 @@ void Game::drawTinyVisitor(M5GFX& d, int cx, int cy, uint8_t icon) {
   RealSprites::blit(d, cx - 16, cy - 20, table[icon]);
 }
 
-void Game::drawTinyMonster(M5GFX& d, int x, int y, uint8_t type) {
+void Game::drawTinyMonster(LovyanGFX& d, int x, int y, uint8_t type) {
   RealSprites::blit(d, x - 16, y - 20, RealSprites::slime);
 }
 
 
 
-void Game::drawHeader(M5GFX& d) {
+void Game::drawHeader(LovyanGFX& d) {
   d.fillRect(0, 0, 320, 24, COL_INK);
   d.setTextColor(COL_CREAM, COL_INK);
   char buf[48];
@@ -96,7 +96,7 @@ void Game::drawHeader(M5GFX& d) {
   d.drawString(buf, 175, 5, 1);
 }
 
-void Game::drawTabs(M5GFX& d) {
+void Game::drawTabs(LovyanGFX& d) {
   const char* names[] = {"WOODS", "SHOP", "LAB", "GARDEN", "KEEP", "BOOK"};
   Screen ids[] = {Screen::WORLD, Screen::SHOP, Screen::LAB, Screen::GARDEN, Screen::DEFENSE, Screen::JOURNAL};
   for (int i = 0; i < 6; i++) {
@@ -105,7 +105,7 @@ void Game::drawTabs(M5GFX& d) {
   }
 }
 
-void Game::drawWorld(M5GFX& d) {
+void Game::drawWorld(LovyanGFX& d) {
   d.fillScreen(COL_GRASS);
   // soft tile variation
   for (int y = 27; y < 204; y += 16)
@@ -176,7 +176,7 @@ void Game::drawWorld(M5GFX& d) {
   drawButton(d, 180, 158, 130, 36, "OPEN THE SHOP", COL_PLUM);
 }
 
-void Game::drawShop(M5GFX& d) {
+void Game::drawShop(LovyanGFX& d) {
   d.fillScreen(0x31A8);
   for (int y = 27; y < 207; y += 16)
     for (int x = 0; x < 320; x += 16)
@@ -218,7 +218,7 @@ void Game::drawShop(M5GFX& d) {
   drawButton(d, 168, 108, 140, 30, "TRADE / HELP", COL_PLUM);
 }
 
-void Game::drawLab(M5GFX& d) {
+void Game::drawLab(LovyanGFX& d) {
   d.fillScreen(0x18E3);
   for (int y = 27; y < 210; y += 16)
     for (int x = 0; x < 320; x += 16)
@@ -260,7 +260,7 @@ void Game::drawLab(M5GFX& d) {
   d.drawString(b, 12, 202, 1);
 }
 
-void Game::drawGarden(M5GFX& d) {
+void Game::drawGarden(LovyanGFX& d) {
   d.fillScreen(0x2AE4);
   // plots
   for (int row = 0; row < 2; row++)
@@ -288,7 +288,7 @@ void Game::drawGarden(M5GFX& d) {
   drawButton(d, 165, 162, 145, 34, "HARVEST", COL_TEAL);
 }
 
-void Game::drawDefense(M5GFX& d) {
+void Game::drawDefense(LovyanGFX& d) {
   d.fillScreen(COL_NIGHT);
   for (int y = 32; y < 205; y += 16)
     for (int x = 0; x < 320; x += 16)
@@ -327,7 +327,7 @@ void Game::drawDefense(M5GFX& d) {
   d.drawString(b, 12, 198, 1);
 }
 
-void Game::drawBattle(M5GFX& d) {
+void Game::drawBattle(LovyanGFX& d) {
   d.fillScreen(COL_NIGHT);
   // stars
   for (int i = 0; i < 22; i++) {
@@ -363,7 +363,7 @@ void Game::drawBattle(M5GFX& d) {
   drawButton(d, 164, 162, 148, 36, "END NIGHT", COL_PLUM);
 }
 
-void Game::drawJournal(M5GFX& d) {
+void Game::drawJournal(LovyanGFX& d) {
   d.fillScreen(0x2125);
   drawPanel(d, 6, 28, 308, 175, COL_PANEL);
 
@@ -394,7 +394,7 @@ void Game::drawJournal(M5GFX& d) {
     d.drawString("Even the quiet ones have heard of you.", 14, 168, 1);
 }
 
-void Game::draw(M5GFX& d) {
+void Game::draw(LovyanGFX& d) {
   switch (screen) {
     case Screen::WORLD:   drawWorld(d);   break;
     case Screen::SHOP:    drawShop(d);    break;
