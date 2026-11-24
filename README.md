@@ -1,3 +1,5 @@
+# BasaltSoftworks
+
 ```
 ______  ___   _____  ___   _    _____ _____  ___________ _____ _    _  ___________ _   __ _____ 
 | ___ \/ _ \ /  ___|/ _ \ | |  |_   _/  ___||  _  |  ___|_   _| |  | ||  _  | ___ \ | / //  ___|
@@ -7,10 +9,10 @@ ______  ___   _____  ___   _    _____ _____  ___________ _____ _    _  _________
 \____/\_| |_/\____/\_| |_/\_____/\_/ \____/  \___/\_|     \_/  \/  \/  \___/\_| \_\_| \_/\____/ 
                                                                                                 
                                                                                                 
-```        
-                                                                                                
-# Wizard's Keep
-**Basalt Softworks · M5Stack Core2 · Native ESP32 game**
+```
 
-A cozy top-down woodland wizard RPG with a character-driven shop loop by day and a compact keep-defense encounter by night.
+Wizard's Keep
 
+Basalt Softworks · M5Stack Core2 · Native ESP32 game
+
+A cozy top\-down woodland wizard RPG with a character\-driven shop loop by day and a compact keep\-defense encounter by night\.
