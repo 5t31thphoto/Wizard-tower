@@ -4,6 +4,7 @@
 
 Game game;
 Preferences prefs;
+M5Canvas canvas(&M5.Display);
 
 void loadGame() {
   prefs.begin("wizardskeep", true);
@@ -39,16 +40,25 @@ void setup() {
   auto cfg = M5.config();
   cfg.clear_display = true;
   M5.begin(cfg);
-  M5.Display.setRotation(0);
+  M5.Display.setRotation(1);
   M5.Display.setBrightness(180);
   M5.Display.setTextSize(1);
+
+  canvas.setColorDepth(16);
+  if (!canvas.createSprite(320, 240)) {
+    canvas.setColorDepth(8);
+    canvas.createSprite(320, 240);
+  }
+  canvas.setTextSize(1);
+
   loadGame();
   game.begin();
 }
 void loop() {
   M5.update();
   game.update();
-  game.draw(M5.Display);
+  game.draw(canvas);
+  canvas.pushSprite(0, 0);
   if (game.consumeSaveRequest()) saveGame();
   delay(25);
 }
