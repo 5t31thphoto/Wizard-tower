@@ -1975,7 +1975,7 @@ const uint16_t slime[SW*SH] PROGMEM = {
   0x1948, 0x1927, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-inline void blit(M5GFX& d, int x, int y, const uint16_t* src) {
+inline void blit(LovyanGFX& d, int x, int y, const uint16_t* src) {
   for (int row = 0; row < SH; row++) {
     for (int col = 0; col < SW; col++) {
       uint16_t c = pgm_read_word(&src[row * SW + col]);
