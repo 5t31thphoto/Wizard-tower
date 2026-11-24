@@ -10,12 +10,12 @@
 __)\__/|   | |/\|\__/| \ | \__) 
                                 
 ```
-# a new game called
+a new game called
 ```
  +-++-++-++-++-++-+ +-++-++-++-+
  |W||I||Z||A||R||D| |K||E||E||P|
  +-++-++-++-++-++-+ +-++-++-++-+
 ```
-Basalt Softworks · M5Stack Core2 · Native ESP32 game
+M5Stack Core2 · Native ESP32
 
 A cozy top\-down woodland wizard RPG with a character\-driven shop loop by day and a compact keep\-defense encounter by night\.
