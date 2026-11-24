@@ -1,0 +1,20 @@
+Wizard's Keep — Checkpoint 0.2.0 (Expanded)
+
+What changed since 0.1.0:
+- Visitor roster expanded to 14 characters with reputation gates.
+  Early: normal villagers & peddlers.
+  Mid: tinkerer, witch, quiet guest.
+  Late: fungus herbalist, skeleton mage, young treant, ghost noble.
+  Very late: void-touched client.
+- Each visitor has specific request type + amount + reward.
+- Tiny procedural visitor & monster sprites (12-18 px) instead of generic circles.
+- Garden now has growth stages that advance with days.
+- Better visual detail on every screen (tower flag, better cauldron, denser forest, etc.).
+- Reputation now actively unlocks stranger clients and improves rewards.
+- Night waves scale more interestingly; turrets and walls matter more.
+- Journal reflects current reputation tier with flavor text.
+- Header shows potions count.
+- Starting resources slightly higher for better first-day feel.
+
+Still placeholder art (procedural). Real 16x16 sprite atlases remain future work once packing rules are decided.
+Core loop is now noticeably more alive and the revolving door feels real.

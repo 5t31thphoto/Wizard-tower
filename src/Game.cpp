@@ -1,174 +1,704 @@
 #include "Game.h"
 
-static const uint16_t INK=0x18E3, PANEL=0x2945, PANEL2=0x39A7, CREAM=0xFFDB;
-static const uint16_t TEAL=0x04F2, PLUM=0x6810, LIME=0x87E0, GOLD=0xFEA0, PINK=0xF3B8;
-static const uint16_t GRASS=0x3D66, DARKGRASS=0x2AE4, BROWN=0x8A03, STONE=0x8C71, NIGHT=0x1084;
+// Palette (RGB565) - prefixed to avoid M5GFX name collisions
+static const uint16_t COL_INK       = 0x18E3;
+static const uint16_t COL_PANEL     = 0x2945;
+static const uint16_t COL_PANEL2    = 0x39A7;
+static const uint16_t COL_CREAM     = 0xFFDB;
+static const uint16_t COL_TEAL      = 0x04F2;
+static const uint16_t COL_PLUM      = 0x6810;
+static const uint16_t COL_LIME      = 0x87E0;
+static const uint16_t COL_GOLD      = 0xFEA0;
+static const uint16_t COL_PINK      = 0xF3B8;
+static const uint16_t COL_GRASS     = 0x3D66;
+static const uint16_t COL_DARKGRASS = 0x2AE4;
+static const uint16_t COL_BROWN     = 0x8A03;
+static const uint16_t COL_STONE     = 0x8C71;
+static const uint16_t COL_NIGHT     = 0x1084;
+static const uint16_t COL_SKIN      = 0xF9CB;
+static const uint16_t COL_MOSS      = 0x4C8A;
+static const uint16_t COL_BONE      = 0xDEFB;
+static const uint16_t COL_VOID      = 0x4810;
+
 static const char* screenName(Screen s) {
-  switch(s){case Screen::WORLD:return "CLEARING";case Screen::SHOP:return "SHOP";case Screen::LAB:return "LAB";case Screen::GARDEN:return "GARDEN";case Screen::DEFENSE:return "KEEP";case Screen::BATTLE:return "NIGHT WATCH";default:return "JOURNAL";}
-}
-void Game::begin(){ messageTitle="A quiet morning"; }
-bool Game::consumeSaveRequest(){bool v=saveRequested;saveRequested=false;return v;}
-void Game::drawPanel(M5GFX&d,int x,int y,int w,int h,uint16_t fill){
-  d.fillRoundRect(x,y,w,h,5,fill); d.drawRoundRect(x,y,w,h,5,0x7B6D);
-}
-void Game::drawButton(M5GFX&d,int x,int y,int w,int h,const char*label,uint16_t fill){
-  d.fillRoundRect(x,y,w,h,4,fill); d.drawRoundRect(x,y,w,h,4,CREAM); d.setTextColor(CREAM,fill); d.drawString(label,x+5,y+(h-8)/2,1);
-}
-void Game::drawHeader(M5GFX&d){
-  d.fillRect(0,0,320,24,INK); d.setTextColor(CREAM,INK);
-  char buf[48]; snprintf(buf,sizeof(buf),"WIZARD'S KEEP  /  DAY %u",day); d.drawString(buf,5,5,1);
-  snprintf(buf,sizeof(buf),"%luG  H:%u  W:%u  M:%u", (unsigned long)gold,herbs,wood,mushrooms);
-  d.setTextColor(GOLD,INK); d.drawString(buf,190,5,1);
-}
-void Game::drawTabs(M5GFX&d){
-  const char* names[]={"WOODS","SHOP","LAB","GARDEN","KEEP","BOOK"};
-  Screen ids[]={Screen::WORLD,Screen::SHOP,Screen::LAB,Screen::GARDEN,Screen::DEFENSE,Screen::JOURNAL};
-  for(int i=0;i<6;i++){uint16_t c=(screen==ids[i])?PLUM:PANEL; drawButton(d,i*53+2,211,50,26,names[i],c);}
-}
-void Game::drawWorld(M5GFX&d){
-  d.fillScreen(GRASS);
-  // tiny woodland clearing, readable tile-like blocks
-  for(int y=27;y<204;y+=16)for(int x=0;x<320;x+=16){
-    uint16_t c=((x/16+y/16)%3==0)?DARKGRASS:GRASS; d.fillRect(x,y,16,16,c);
-    if(((x*7+y*3)%11)==0)d.drawPixel(x+7,y+8,PINK);
+  switch(s){
+    case Screen::WORLD:   return "CLEARING";
+    case Screen::SHOP:    return "SHOP";
+    case Screen::LAB:     return "LAB";
+    case Screen::GARDEN:  return "GARDEN";
+    case Screen::DEFENSE: return "KEEP";
+    case Screen::BATTLE:  return "NIGHT WATCH";
+    default:              return "JOURNAL";
   }
-  // forest edge
-  for(int x=0;x<320;x+=32){d.fillCircle(x+12,47,14,0x1D84);d.fillCircle(x+23,42,11,0x2D05);d.fillRect(x+14,47,7,15,BROWN);}
-  // tower
-  d.fillRect(24,75,72,89,STONE); d.fillRect(18,68,84,13,PLUM); d.fillTriangle(18,68,60,35,102,68,PLUM);
-  d.fillRect(48,113,22,51,BROWN); d.fillRect(35,91,13,18,GOLD); d.fillRect(72,91,13,18,GOLD);
-  d.fillRect(49,130,20,34,INK); d.drawRect(49,130,20,34,CREAM);
-  // garden plots
-  for(int i=0;i<3;i++){int x=133+i*43;d.fillRoundRect(x,118,35,37,3,BROWN);for(int j=0;j<3;j++){d.drawFastVLine(x+8+j*9,126,20,LIME);d.fillCircle(x+8+j*9,127,3,0xAFC0);}}
+}
+
+void Game::begin() {
+  messageTitle = "A quiet morning";
+  message = "The kettle is warm. Someone may visit today.";
+  pickVisitor();
+}
+
+bool Game::consumeSaveRequest() {
+  bool v = saveRequested;
+  saveRequested = false;
+  return v;
+}
+
+void Game::drawPanel(M5GFX& d, int x, int y, int w, int h, uint16_t fill) {
+  d.fillRoundRect(x, y, w, h, 5, fill);
+  d.drawRoundRect(x, y, w, h, 5, 0x7B6D);
+}
+
+void Game::drawButton(M5GFX& d, int x, int y, int w, int h, const char* label, uint16_t fill) {
+  d.fillRoundRect(x, y, w, h, 4, fill);
+  d.drawRoundRect(x, y, w, h, 4, COL_CREAM);
+  d.setTextColor(COL_CREAM, fill);
+  d.drawString(label, x + 5, y + (h - 8) / 2, 1);
+}
+
+// Tiny procedural visitor (roughly 14-18 px tall)
+void Game::drawTinyVisitor(M5GFX& d, int cx, int cy, uint8_t icon) {
+  // body base
+  uint16_t body = 0x6A0D, head = COL_SKIN, accent = COL_PLUM;
+  switch(icon) {
+    case 0: case 1: // normal humans
+      body = 0x6A0D; head = COL_SKIN; accent = COL_PLUM; break;
+    case 2: // peddler
+      body = 0x8A22; head = COL_SKIN; accent = COL_GOLD; break;
+    case 3: // mushroom guy
+      body = COL_MOSS; head = 0xA800; accent = 0xF800; break;
+    case 4: // tinkerer
+      body = 0x5A86; head = COL_SKIN; accent = 0xC618; break;
+    case 5: // knight-ish
+      body = 0x4A49; head = COL_SKIN; accent = 0x8410; break;
+    case 6: // witch
+      body = COL_PLUM; head = COL_SKIN; accent = 0xF81F; break;
+    case 7: // quiet / hooded
+      body = 0x3186; head = 0x4208; accent = COL_TEAL; break;
+    case 8: // fungus herbalist
+      body = 0x3D08; head = 0x07E0; accent = 0xF81F; break;
+    case 9: // skeleton mage
+      body = COL_PLUM; head = COL_BONE; accent = COL_TEAL; break;
+    case 10: // treant
+      body = COL_BROWN; head = COL_MOSS; accent = COL_LIME; break;
+    case 11: // ghost
+      body = 0x5ACB; head = 0xADF8; accent = 0xFFFF; break;
+    case 12: // void
+      body = COL_VOID; head = 0x0000; accent = 0xF81F; break;
+    default:
+      body = 0x6A0D; head = COL_SKIN; accent = COL_PLUM; break;
+  }
+
+  // legs / body
+  d.fillRect(cx - 5, cy + 4, 10, 11, body);
+  // head
+  d.fillCircle(cx, cy - 2, 6, head);
+  // hat / feature
+  if (icon == 0 || icon == 1 || icon == 5) { // simple hat
+    d.fillTriangle(cx - 7, cy - 5, cx, cy - 14, cx + 7, cy - 5, accent);
+  } else if (icon == 3 || icon == 8) { // mushroom cap
+    d.fillCircle(cx, cy - 6, 8, head);
+    d.fillRect(cx - 8, cy - 6, 16, 4, head);
+  } else if (icon == 9) { // skull glow
+    d.fillCircle(cx - 2, cy - 3, 1, COL_TEAL);
+    d.fillCircle(cx + 2, cy - 3, 1, COL_TEAL);
+  } else if (icon == 11) { // soft glow
+    d.drawCircle(cx, cy - 2, 8, 0x7DFF);
+  } else if (icon == 12) { // void eyes
+    d.fillCircle(cx - 2, cy - 3, 2, 0xF81F);
+    d.fillCircle(cx + 2, cy - 3, 2, 0xF81F);
+  } else {
+    d.fillTriangle(cx - 6, cy - 4, cx, cy - 12, cx + 6, cy - 4, accent);
+  }
+  // arms suggestion
+  d.drawFastHLine(cx - 8, cy + 6, 4, body);
+  d.drawFastHLine(cx + 4, cy + 6, 4, body);
+}
+
+void Game::drawTinyMonster(M5GFX& d, int x, int y, uint8_t type) {
+  if (type == 0) { // slime
+    d.fillCircle(x, y, 7, 0x07E0);
+    d.fillCircle(x - 2, y - 2, 2, 0x0000);
+    d.fillCircle(x + 3, y - 1, 2, 0x0000);
+  } else if (type == 1) { // bone
+    d.fillCircle(x, y, 6, COL_BONE);
+    d.fillCircle(x - 2, y - 2, 1, COL_TEAL);
+    d.fillCircle(x + 2, y - 2, 1, COL_TEAL);
+  } else { // shadow
+    d.fillCircle(x, y, 7, COL_VOID);
+    d.fillCircle(x - 2, y - 1, 2, 0xF81F);
+    d.fillCircle(x + 2, y - 1, 2, 0xF81F);
+  }
+}
+
+void Game::drawHeader(M5GFX& d) {
+  d.fillRect(0, 0, 320, 24, COL_INK);
+  d.setTextColor(COL_CREAM, COL_INK);
+  char buf[48];
+  snprintf(buf, sizeof(buf), "WIZARD'S KEEP  /  DAY %u", day);
+  d.drawString(buf, 5, 5, 1);
+  snprintf(buf, sizeof(buf), "%luG  H:%u W:%u M:%u P:%u", (unsigned long)gold, herbs, wood, mushrooms, potions);
+  d.setTextColor(COL_GOLD, COL_INK);
+  d.drawString(buf, 175, 5, 1);
+}
+
+void Game::drawTabs(M5GFX& d) {
+  const char* names[] = {"WOODS", "SHOP", "LAB", "GARDEN", "KEEP", "BOOK"};
+  Screen ids[] = {Screen::WORLD, Screen::SHOP, Screen::LAB, Screen::GARDEN, Screen::DEFENSE, Screen::JOURNAL};
+  for (int i = 0; i < 6; i++) {
+    uint16_t c = (screen == ids[i]) ? COL_PLUM : COL_PANEL;
+    drawButton(d, i * 53 + 2, 211, 50, 26, names[i], c);
+  }
+}
+
+void Game::drawWorld(M5GFX& d) {
+  d.fillScreen(COL_GRASS);
+  // soft tile variation
+  for (int y = 27; y < 204; y += 16)
+    for (int x = 0; x < 320; x += 16) {
+      uint16_t c = ((x / 16 + y / 16) % 3 == 0) ? COL_DARKGRASS : COL_GRASS;
+      d.fillRect(x, y, 16, 16, c);
+      if (((x * 7 + y * 3) % 13) == 0) d.drawPixel(x + 7, y + 8, COL_PINK);
+    }
+
+  // forest edge – denser
+  for (int x = 0; x < 320; x += 28) {
+    d.fillCircle(x + 10, 44, 13, 0x1D84);
+    d.fillCircle(x + 20, 40, 10, 0x2D05);
+    d.fillRect(x + 12, 44, 6, 14, COL_BROWN);
+  }
+
+  // tower – a bit more character
+  d.fillRect(22, 72, 76, 95, COL_STONE);
+  d.fillRect(16, 64, 88, 14, COL_PLUM);
+  d.fillTriangle(16, 64, 60, 28, 104, 64, COL_PLUM);
+  d.fillRect(46, 110, 24, 57, COL_BROWN);          // door
+  d.fillRect(33, 88, 14, 18, COL_GOLD);            // window
+  d.fillRect(71, 88, 14, 18, COL_GOLD);
+  d.fillRect(48, 128, 20, 36, COL_INK);
+  d.drawRect(48, 128, 20, 36, COL_CREAM);
+  // little flag
+  d.fillTriangle(60, 28, 78, 22, 60, 34, COL_TEAL);
+
+  // garden plots with stage
+  for (int i = 0; i < 3; i++) {
+    int x = 130 + i * 42;
+    d.fillRoundRect(x, 118, 34, 36, 3, COL_BROWN);
+    if (gardenStage >= 1) {
+      for (int j = 0; j < 3; j++) {
+        d.drawFastVLine(x + 7 + j * 9, 126, 14 + gardenStage * 2, COL_LIME);
+        if (gardenStage >= 2) d.fillCircle(x + 7 + j * 9, 126, 2 + gardenStage, (gardenStage >= 3) ? COL_PINK : 0xAFC0);
+      }
+    }
+  }
+
   // path
-  for(int x=94;x<125;x+=12)d.fillRect(x,150,10,10,0xC5B0);
-  // player wizard
-  d.fillCircle(112,174,6,0xFBCB);d.fillTriangle(104,169,112,156,120,169,PLUM);d.fillRect(106,174,12,15,PLUM);d.drawFastVLine(123,165,24,BROWN);d.fillCircle(123,162,3,TEAL);
-  drawPanel(d,5,29,119,32,PANEL);d.setTextColor(CREAM,PANEL);d.drawString("Your little corner",12,35,1);d.setTextColor(0xBDF7,PANEL);d.drawString("of the peculiar woods.",12,47,1);
-  drawPanel(d,174,29,140,45,PANEL);d.setTextColor(CREAM,PANEL);d.drawString("TODAY'S TASK",182,35,1);d.setTextColor(GOLD,PANEL);d.drawString("Gather, brew, meet someone.",182,49,1);
-  drawButton(d,184,82,126,28,"BEGIN NIGHT RAID",0x3810);\n  drawButton(d,184,161,126,36,"OPEN THE SHOP",PLUM);
+  for (int x = 92; x < 128; x += 11) d.fillRect(x, 152, 9, 9, 0xC5B0);
+
+  // player wizard – slightly better
+  d.fillCircle(110, 176, 7, COL_SKIN);
+  d.fillTriangle(102, 170, 110, 154, 118, 170, COL_PLUM);
+  d.fillRect(104, 176, 13, 16, COL_PLUM);
+  d.drawFastVLine(122, 166, 26, COL_BROWN);
+  d.fillCircle(122, 163, 3, COL_TEAL);
+
+  drawPanel(d, 5, 28, 118, 34, COL_PANEL);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("Your little corner", 12, 34, 1);
+  d.setTextColor(0xBDF7, COL_PANEL);
+  d.drawString("of the peculiar woods.", 12, 46, 1);
+
+  drawPanel(d, 172, 28, 142, 48, COL_PANEL);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("TODAY", 180, 34, 1);
+  d.setTextColor(COL_GOLD, COL_PANEL);
+  char task[40];
+  if (reputation < 4)       strcpy(task, "Gather & meet locals");
+  else if (reputation < 9)  strcpy(task, "Stranger visitors...");
+  else                      strcpy(task, "The woods watch you");
+  d.drawString(task, 180, 48, 1);
+
+  drawButton(d, 180, 86, 130, 28, "BEGIN NIGHT", 0x3810);
+  drawButton(d, 180, 158, 130, 36, "OPEN THE SHOP", COL_PLUM);
 }
-void Game::drawShop(M5GFX&d){
-  d.fillScreen(0x31A8); // warm timber floor
-  for(int y=27;y<207;y+=16)for(int x=0;x<320;x+=16){d.drawRect(x,y,16,16,0x5A08);}
-  d.fillRect(0,27,320,24,0x5A08);d.fillRect(12,57,296,8,BROWN);
-  // shelves and bottles
-  for(int i=0;i<7;i++){int x=20+i*41;d.fillRect(x,68,32,36,BROWN);d.fillRect(x+5,78,8,15,TEAL);d.fillRect(x+19,75,8,18,PINK);d.fillRect(x+5,75,8,3,GOLD);d.fillRect(x+19,72,8,3,GOLD);}
-  d.fillRect(70,145,180,22,BROWN);d.fillRect(78,137,164,8,0xD6B2);
-  // visiting customer
-  d.fillCircle(160,115,9,0xF9CB);d.fillRect(151,124,18,24,0x6A0D);d.fillTriangle(148,108,160,91,172,108,PLUM);
-  drawPanel(d,8,31,145,35,PANEL);d.setTextColor(CREAM,PANEL);d.drawString("A visitor has arrived!",15,37,1);d.setTextColor(GOLD,PANEL);d.drawString(visitors[visitorIndex].name,15,50,1);
-  drawPanel(d,8,171,304,34,PANEL);d.setTextColor(CREAM,PANEL);d.drawString(visitors[visitorIndex].greeting,15,177,1);d.setTextColor(0xBDF7,PANEL);d.drawString(visitors[visitorIndex].request,15,190,1);
-  drawButton(d,170,112,140,30,"TRADE / HELP",PLUM);
+
+void Game::drawShop(M5GFX& d) {
+  d.fillScreen(0x31A8);
+  for (int y = 27; y < 207; y += 16)
+    for (int x = 0; x < 320; x += 16)
+      d.drawRect(x, y, 16, 16, 0x5A08);
+
+  d.fillRect(0, 27, 320, 22, 0x5A08);
+  d.fillRect(10, 55, 300, 7, COL_BROWN);
+
+  // shelves with more bottles
+  for (int i = 0; i < 7; i++) {
+    int x = 18 + i * 42;
+    d.fillRect(x, 66, 34, 38, COL_BROWN);
+    d.fillRect(x + 4, 76, 9, 16, COL_TEAL);
+    d.fillRect(x + 20, 73, 9, 19, COL_PINK);
+    d.fillRect(x + 4, 73, 9, 3, COL_GOLD);
+    d.fillRect(x + 20, 70, 9, 3, COL_GOLD);
+    if (i % 2) d.fillCircle(x + 12, 92, 3, COL_LIME);
+  }
+
+  // counter
+  d.fillRect(60, 142, 200, 24, COL_BROWN);
+  d.fillRect(68, 134, 184, 9, 0xD6B2);
+
+  // the visitor – now with personality
+  drawTinyVisitor(d, 160, 112, visitors[visitorIndex].icon);
+
+  drawPanel(d, 6, 30, 150, 38, COL_PANEL);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("A visitor has arrived", 12, 36, 1);
+  d.setTextColor(COL_GOLD, COL_PANEL);
+  d.drawString(visitors[visitorIndex].name, 12, 50, 1);
+
+  drawPanel(d, 6, 170, 308, 36, COL_PANEL);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString(visitors[visitorIndex].greeting, 12, 176, 1);
+  d.setTextColor(0xBDF7, COL_PANEL);
+  d.drawString(visitors[visitorIndex].request, 12, 190, 1);
+
+  drawButton(d, 168, 108, 140, 30, "TRADE / HELP", COL_PLUM);
 }
-void Game::drawLab(M5GFX&d){
-  d.fillScreen(0x18E3); for(int y=27;y<210;y+=16)for(int x=0;x<320;x+=16)d.drawRect(x,y,16,16,0x39A7);
-  d.fillRect(18,50,284,8,BROWN);for(int i=0;i<6;i++){int x=30+i*45;d.fillRect(x,28,13,22,0x7E9F);d.fillRect(x+3,24,7,5,GOLD);}
-  d.fillRect(65,122,190,18,BROWN);d.fillRect(75,140,12,53,BROWN);d.fillRect(235,140,12,53,BROWN);
-  d.fillRoundRect(130,83,60,48,12,0x6B4D);d.fillRect(138,75,44,13,0x9D13);d.fillCircle(160,105,14,TEAL);d.fillCircle(160,105,7,LIME);
-  drawPanel(d,7,31,144,36,PANEL);d.setTextColor(CREAM,PANEL);d.drawString("ALCHEMY BENCH",14,37,1);d.setTextColor(GOLD,PANEL);d.drawString("Herbs + mushrooms",14,51,1);
-  drawButton(d,12,165,142,34,"BREW POTION",PLUM);drawButton(d,166,165,142,34,"RESEARCH",TEAL);
-  d.setTextColor(CREAM,0x18E3);char b[40];snprintf(b,sizeof(b),"Potions: %u   Herbs: %u",potions,herbs);d.drawString(b,14,207,1);
+
+void Game::drawLab(M5GFX& d) {
+  d.fillScreen(0x18E3);
+  for (int y = 27; y < 210; y += 16)
+    for (int x = 0; x < 320; x += 16)
+      d.drawRect(x, y, 16, 16, 0x39A7);
+
+  // shelf of reagents
+  d.fillRect(16, 48, 288, 8, COL_BROWN);
+  for (int i = 0; i < 7; i++) {
+    int x = 24 + i * 40;
+    d.fillRect(x, 26, 14, 24, 0x7E9F);
+    d.fillRect(x + 3, 22, 8, 5, COL_GOLD);
+    if (i % 3 == 0) d.fillCircle(x + 7, 38, 3, COL_PINK);
+  }
+
+  // bench + cauldron
+  d.fillRect(55, 120, 210, 20, COL_BROWN);
+  d.fillRect(70, 140, 14, 55, COL_BROWN);
+  d.fillRect(236, 140, 14, 55, COL_BROWN);
+  d.fillRoundRect(125, 78, 70, 55, 14, 0x6B4D);
+  d.fillRect(135, 68, 50, 16, 0x9D13);
+  d.fillCircle(160, 105, 16, COL_TEAL);
+  d.fillCircle(160, 105, 8, COL_LIME);
+  // bubbles
+  d.fillCircle(152, 96, 2, COL_CREAM);
+  d.fillCircle(168, 98, 3, COL_CREAM);
+
+  drawPanel(d, 6, 30, 150, 38, COL_PANEL);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("ALCHEMY BENCH", 12, 36, 1);
+  d.setTextColor(COL_GOLD, COL_PANEL);
+  d.drawString("Moonroot & more", 12, 50, 1);
+
+  drawButton(d, 10, 162, 145, 34, "BREW POTION", COL_PLUM);
+  drawButton(d, 165, 162, 145, 34, "RESEARCH", COL_TEAL);
+
+  d.setTextColor(COL_CREAM, 0x18E3);
+  char b[48];
+  snprintf(b, sizeof(b), "Potions:%u  Herbs:%u  Mush:%u", potions, herbs, mushrooms);
+  d.drawString(b, 12, 202, 1);
 }
-void Game::drawGarden(M5GFX&d){
+
+void Game::drawGarden(M5GFX& d) {
   d.fillScreen(0x2AE4);
-  for(int y=38;y<194;y+=48)for(int x=12;x<310;x+=58){d.fillRoundRect(x,y,48,38,4,BROWN);for(int i=0;i<3;i++){d.drawFastVLine(x+12+i*12,y+12,16,LIME);d.fillCircle(x+12+i*12,y+12,4,(day%2)?PINK:GOLD);}}
-  drawPanel(d,8,29,165,33,PANEL);d.setTextColor(CREAM,PANEL);d.drawString("MOONPATCH GARDEN",15,36,1);d.setTextColor(GOLD,PANEL);d.drawString("Seeds grow between days.",15,49,1);
-  drawButton(d,12,163,140,35,"PLANT SEED",PLUM);drawButton(d,166,163,140,35,"HARVEST",TEAL);
+  // plots
+  for (int row = 0; row < 2; row++)
+    for (int col = 0; col < 4; col++) {
+      int x = 18 + col * 74;
+      int y = 42 + row * 58;
+      d.fillRoundRect(x, y, 64, 48, 4, COL_BROWN);
+      if (gardenStage > 0) {
+        for (int i = 0; i < 4; i++) {
+          d.drawFastVLine(x + 10 + i * 12, y + 12, 10 + gardenStage * 3, COL_LIME);
+          if (gardenStage >= 2)
+            d.fillCircle(x + 10 + i * 12, y + 12, 2 + gardenStage, (gardenStage >= 3) ? COL_PINK : COL_GOLD);
+        }
+      }
+    }
+
+  drawPanel(d, 6, 28, 180, 36, COL_PANEL);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("MOONPATCH GARDEN", 12, 34, 1);
+  d.setTextColor(COL_GOLD, COL_PANEL);
+  const char* stageTxt[] = {"Soil rests", "Sprouts rising", "Buds forming", "Ready to harvest!"};
+  d.drawString(stageTxt[gardenStage > 3 ? 3 : gardenStage], 12, 48, 1);
+
+  drawButton(d, 10, 162, 145, 34, "PLANT SEED", COL_PLUM);
+  drawButton(d, 165, 162, 145, 34, "HARVEST", COL_TEAL);
 }
-void Game::drawDefense(M5GFX&d){
-  d.fillScreen(NIGHT);for(int y=32;y<205;y+=16)for(int x=0;x<320;x+=16)d.fillRect(x,y,16,16,((x+y)/16)%2?0x10A4:0x18C6);
-  d.fillRect(128,84,64,92,STONE);d.fillTriangle(120,84,160,48,200,84,PLUM);d.fillRect(147,135,26,41,INK);
-  for(int i=0;i<wallLevel;i++)d.fillRect(20+i*18,176,15,12,STONE);
-  for(int i=0;i<turretLevel;i++){int x=225+i*24;d.fillRect(x,150,12,26,BROWN);d.fillCircle(x+6,148,8,TEAL);}
-  drawPanel(d,7,30,170,42,PANEL);d.setTextColor(CREAM,PANEL);d.drawString("KEEP IMPROVEMENTS",14,36,1);d.setTextColor(GOLD,PANEL);d.drawString("Walls & warding turrets",14,51,1);
-  drawButton(d,8,155,145,39,"BUILD WALL  8G",PLUM);drawButton(d,165,155,145,39,"WARD TURRET  14G",TEAL);
-  d.setTextColor(CREAM,NIGHT);char b[40];snprintf(b,sizeof(b),"Wall %u   Turret %u",wallLevel,turretLevel);d.drawString(b,12,198,1);
+
+void Game::drawDefense(M5GFX& d) {
+  d.fillScreen(COL_NIGHT);
+  for (int y = 32; y < 205; y += 16)
+    for (int x = 0; x < 320; x += 16)
+      d.fillRect(x, y, 16, 16, ((x + y) / 16) % 2 ? 0x10A4 : 0x18C6);
+
+  // keep
+  d.fillRect(120, 78, 80, 100, COL_STONE);
+  d.fillTriangle(110, 78, 160, 38, 210, 78, COL_PLUM);
+  d.fillRect(145, 130, 30, 48, COL_INK);
+  d.drawRect(145, 130, 30, 48, COL_CREAM);
+
+  // walls
+  for (int i = 0; i < wallLevel && i < 6; i++)
+    d.fillRect(18 + i * 16, 170, 14, 14, COL_STONE);
+
+  // turrets
+  for (int i = 0; i < turretLevel && i < 4; i++) {
+    int x = 230 + i * 22;
+    d.fillRect(x, 145, 12, 28, COL_BROWN);
+    d.fillCircle(x + 6, 142, 8, COL_TEAL);
+    d.fillCircle(x + 6, 142, 3, COL_LIME);
+  }
+
+  drawPanel(d, 6, 28, 180, 42, COL_PANEL);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("KEEP IMPROVEMENTS", 12, 34, 1);
+  d.setTextColor(COL_GOLD, COL_PANEL);
+  d.drawString("Walls slow them. Turrets hurt them.", 12, 50, 1);
+
+  drawButton(d, 8, 155, 148, 36, "BUILD WALL  8G+1W", COL_PLUM);
+  drawButton(d, 164, 155, 148, 36, "WARD TURRET 14G+1P", COL_TEAL);
+
+  d.setTextColor(COL_CREAM, COL_NIGHT);
+  char b[40];
+  snprintf(b, sizeof(b), "Wall %u   Turret %u   Rep %u", wallLevel, turretLevel, reputation);
+  d.drawString(b, 12, 198, 1);
 }
-void Game::drawBattle(M5GFX&d){
-  d.fillScreen(NIGHT);for(int i=0;i<18;i++){int x=(i*37+day*13)%320,y=35+(i*29)%160;d.fillCircle(x,y,1,0xFFFF);}
-  d.fillRect(130,125,60,75,STONE);d.fillTriangle(124,125,160,90,196,125,PLUM);d.fillRect(148,163,24,37,INK);
-  int count=wave+1;for(int i=0;i<count;i++){int x=20+i*42+(dayTick%8);int y=164-(i%2)*22;d.fillCircle(x,y,7,0xA154);d.fillCircle(x-3,y-2,2,LIME);d.fillCircle(x+3,y-2,2,LIME);}
-  drawPanel(d,6,29,140,39,PANEL);d.setTextColor(CREAM,PANEL);d.drawString("NIGHT RAID",13,35,1);d.setTextColor(PINK,PANEL);char b[32];snprintf(b,sizeof(b),"Wave %u  /  Keep %u HP",wave,wizardHp);d.drawString(b,13,50,1);
-  drawButton(d,8,163,145,38,"CAST WARD",TEAL);drawButton(d,166,163,145,38,"END NIGHT",PLUM);
+
+void Game::drawBattle(M5GFX& d) {
+  d.fillScreen(COL_NIGHT);
+  // stars
+  for (int i = 0; i < 22; i++) {
+    int x = (i * 41 + day * 17) % 320;
+    int y = 32 + (i * 31) % 150;
+    d.fillCircle(x, y, 1, 0xFFFF);
+  }
+
+  // keep under siege
+  d.fillRect(125, 118, 70, 80, COL_STONE);
+  d.fillTriangle(118, 118, 160, 78, 202, 118, COL_PLUM);
+  d.fillRect(145, 155, 30, 43, COL_INK);
+
+  // monsters approaching
+  int count = 1 + wave / 2;
+  if (count > 5) count = 5;
+  for (int i = 0; i < count; i++) {
+    int x = 18 + i * 38 + (dayTick / 4 % 6);
+    int y = 168 - (i % 2) * 18;
+    uint8_t t = (wave > 3) ? 2 : (wave > 1 ? 1 : 0);
+    drawTinyMonster(d, x, y, t);
+  }
+
+  drawPanel(d, 5, 28, 155, 42, COL_PANEL);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("NIGHT RAID", 12, 34, 1);
+  d.setTextColor(COL_PINK, COL_PANEL);
+  char b[36];
+  snprintf(b, sizeof(b), "Wave %u  Keep %u HP", wave, wizardHp);
+  d.drawString(b, 12, 50, 1);
+
+  drawButton(d, 8, 162, 148, 36, "CAST WARD", COL_TEAL);
+  drawButton(d, 164, 162, 148, 36, "END NIGHT", COL_PLUM);
 }
-void Game::drawJournal(M5GFX&d){
-  d.fillScreen(0x2125);drawPanel(d,8,31,304,169,PANEL);
-  d.setTextColor(CREAM,PANEL);d.drawString("THE TOWER LEDGER",17,40,1);
-  d.setTextColor(GOLD,PANEL);d.drawString("Known crafts",17,62,1);
-  d.setTextColor(CREAM,PANEL);d.drawString("- Moonroot tonic: 2 herbs + 1 mushroom",17,79,1);d.drawString("- Warding charm: 2 wood + 1 potion",17,96,1);
-  d.drawString("- Shop reputation attracts rarer visitors.",17,113,1);d.drawString("- Stronger wards draw stranger things.",17,130,1);
-  d.setTextColor(0xBDF7,PANEL);char b[60];snprintf(b,sizeof(b),"Reputation %u   Walls %u   Turrets %u",reputation,wallLevel,turretLevel);d.drawString(b,17,160,1);
-  d.drawString("A small life. A very large woods.",17,181,1);
+
+void Game::drawJournal(M5GFX& d) {
+  d.fillScreen(0x2125);
+  drawPanel(d, 6, 28, 308, 175, COL_PANEL);
+
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("THE TOWER LEDGER", 14, 36, 1);
+
+  d.setTextColor(COL_GOLD, COL_PANEL);
+  d.drawString("Known crafts", 14, 56, 1);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  d.drawString("- Moonroot tonic   (2H + 1M)", 14, 72, 1);
+  d.drawString("- Stronger wards grow with research", 14, 88, 1);
+
+  d.setTextColor(COL_GOLD, COL_PANEL);
+  d.drawString("The revolving door", 14, 110, 1);
+  d.setTextColor(COL_CREAM, COL_PANEL);
+  char line[60];
+  snprintf(line, sizeof(line), "Reputation %u  –  strangers arrive sooner", reputation);
+  d.drawString(line, 14, 126, 1);
+  snprintf(line, sizeof(line), "Walls %u   Turrets %u   Day %u", wallLevel, turretLevel, day);
+  d.drawString(line, 14, 142, 1);
+
+  d.setTextColor(0xBDF7, COL_PANEL);
+  if (reputation < 5)
+    d.drawString("Locals still trust the old paths.", 14, 168, 1);
+  else if (reputation < 12)
+    d.drawString("Word is spreading through the deeper woods.", 14, 168, 1);
+  else
+    d.drawString("Even the quiet ones have heard of you.", 14, 168, 1);
 }
-void Game::draw(M5GFX&d){
-  switch(screen){case Screen::WORLD:drawWorld(d);break;case Screen::SHOP:drawShop(d);break;case Screen::LAB:drawLab(d);break;case Screen::GARDEN:drawGarden(d);break;case Screen::DEFENSE:drawDefense(d);break;case Screen::BATTLE:drawBattle(d);break;default:drawJournal(d);break;}
-  if(screen!=Screen::BATTLE)drawTabs(d);
+
+void Game::draw(M5GFX& d) {
+  switch (screen) {
+    case Screen::WORLD:   drawWorld(d);   break;
+    case Screen::SHOP:    drawShop(d);    break;
+    case Screen::LAB:     drawLab(d);     break;
+    case Screen::GARDEN:  drawGarden(d);  break;
+    case Screen::DEFENSE: drawDefense(d); break;
+    case Screen::BATTLE:  drawBattle(d);  break;
+    default:              drawJournal(d); break;
+  }
+  if (screen != Screen::BATTLE) drawTabs(d);
   drawHeader(d);
-  if(dialogue){drawPanel(d,20,74,280,91,PANEL);d.setTextColor(GOLD,PANEL);d.drawString(messageTitle,30,83,1);d.setTextColor(CREAM,PANEL);d.drawString(message,30,101,1);drawButton(d,105,137,110,22,"CONTINUE",PLUM);}
-}
-void Game::advanceDay(){
-  day++; night=false;screen=Screen::WORLD; herbs+=1;wood+=1;
-  if(day%2==0)mushrooms++;
-  if(seeds>0 && day%2==0)herbs++;
-  visitorIndex=(visitorIndex+1+(day%3))%8;
-  messageTitle="A new morning";message="The woods have left a little something at your door.";dialogue=true;saveRequested=true;
-}
-void Game::startNight(){
-  night=true;screen=Screen::BATTLE;wave=1+(day/3);monsterHp=3+wave;wizardHp=5+wallLevel;dayTick=0;
-  messageTitle="";message="";dialogue=false;
-}
-void Game::resolveBattle(){
-  if(wizardHp>0){gold+=5+wave*2;mushrooms++;reputation++;messageTitle="The woods fall quiet";message="You survived. Something useful was left behind.";}
-  else{gold+=2;messageTitle="A rough night";message="The keep stands, but the wards need attention.";}
-  advanceDay();dialogue=true;saveRequested=true;
-}
-void Game::handleTap(int x,int y){
-  if(dialogue){if(y>125){dialogue=false;saveRequested=true;}return;}
-  if(screen!=Screen::BATTLE && y>=210){
-    if(x<54)screen=Screen::WORLD;else if(x<107)screen=Screen::SHOP;else if(x<160)screen=Screen::LAB;else if(x<213)screen=Screen::GARDEN;else if(x<266)screen=Screen::DEFENSE;else screen=Screen::JOURNAL;return;
+
+  if (dialogue) {
+    drawPanel(d, 18, 70, 284, 96, COL_PANEL);
+    d.setTextColor(COL_GOLD, COL_PANEL);
+    d.drawString(messageTitle, 28, 80, 1);
+    d.setTextColor(COL_CREAM, COL_PANEL);
+    d.drawString(message, 28, 98, 1);
+    drawButton(d, 100, 132, 120, 24, "CONTINUE", COL_PLUM);
   }
-  switch(screen){
+}
+
+void Game::pickVisitor() {
+  // Prefer visitors the player has unlocked via reputation
+  uint8_t candidates[VISITOR_COUNT];
+  uint8_t n = 0;
+  for (uint8_t i = 0; i < VISITOR_COUNT; i++) {
+    if (reputation >= visitors[i].minRep) candidates[n++] = i;
+  }
+  if (n == 0) n = 1, candidates[0] = 0;
+  visitorIndex = candidates[day % n];  // deterministic but varies
+  // slight shuffle
+  if (n > 2 && (day % 5 == 0)) visitorIndex = candidates[(day / 3) % n];
+}
+
+void Game::advanceDay() {
+  day++;
+  night = false;
+  screen = Screen::WORLD;
+  herbs += 1;
+  wood += 1;
+  if (day % 2 == 0) mushrooms++;
+  if (gardenStage > 0 && gardenStage < 3) gardenStage++;
+  if (gardenStage >= 3) { /* ready */ }
+  pickVisitor();
+  messageTitle = "A new morning";
+  message = "The woods left a little something at your door.";
+  dialogue = true;
+  saveRequested = true;
+}
+
+void Game::startNight() {
+  night = true;
+  screen = Screen::BATTLE;
+  wave = 1 + (day / 4);
+  if (wave > 6) wave = 6;
+  monsterHp = 4 + wave * 2;
+  wizardHp = 6 + wallLevel * 2;
+  dayTick = 0;
+  messageTitle = "";
+  message = "";
+  dialogue = false;
+}
+
+void Game::resolveBattle() {
+  if (wizardHp > 0) {
+    gold += 6 + wave * 3;
+    mushrooms += 1 + (wave > 2);
+    reputation += 1 + (wave > 3);
+    messageTitle = "The woods fall quiet";
+    message = "You survived. Something useful was left behind.";
+  } else {
+    gold += 3;
+    messageTitle = "A rough night";
+    message = "The keep stands, but the wards need attention.";
+  }
+  advanceDay();
+  dialogue = true;
+  saveRequested = true;
+}
+
+void Game::handleTap(int x, int y) {
+  if (dialogue) {
+    if (y > 120) { dialogue = false; saveRequested = true; }
+    return;
+  }
+
+  if (screen != Screen::BATTLE && y >= 210) {
+    if (x < 54) screen = Screen::WORLD;
+    else if (x < 107) screen = Screen::SHOP;
+    else if (x < 160) screen = Screen::LAB;
+    else if (x < 213) screen = Screen::GARDEN;
+    else if (x < 266) screen = Screen::DEFENSE;
+    else screen = Screen::JOURNAL;
+    return;
+  }
+
+  switch (screen) {
     case Screen::WORLD:
-      if(y>150 && x>170){screen=Screen::SHOP;return;}
-      if(y>100){wood+=1;herbs+=1;mushrooms+=(day%2);messageTitle="Gathered";message="A few useful things from the forest floor.";dialogue=true;saveRequested=true;}
-      else if(y>70){startNight();}
+      if (y > 145 && x > 165) { screen = Screen::SHOP; return; }
+      if (y > 80 && y < 120 && x > 165) { startNight(); return; }
+      if (y > 140) {
+        wood += 1; herbs += 1;
+        if (day % 3 == 0) mushrooms++;
+        messageTitle = "Gathered";
+        message = "A few useful things from the forest floor.";
+        dialogue = true; saveRequested = true;
+      }
       break;
-    case Screen::SHOP:{
-      if(y>95 && x>150){
-        Visitor &v=visitors[visitorIndex];
-        if(v.icon==0 && herbs>=2){herbs-=2;gold+=v.reward;}
-        else if(v.icon==4 && mushrooms>=3){mushrooms-=3;gold+=v.reward;}
-        else if(v.icon==7 && wood>=1){wood--;gold+=v.reward;}
-        else if(potions>0){potions--;gold+=v.reward;}
-        else {gold+=3;message="You offer a small sample and promise to brew the rest.";messageTitle="A modest sale";dialogue=true;}
-        reputation++;visitorIndex=(visitorIndex+1)%8;saveRequested=true;
-      }break;}
+
+    case Screen::SHOP: {
+      if (y > 95 && x > 150) {
+        Visitor& v = visitors[visitorIndex];
+        bool paid = false;
+        if (v.reqType == 0 && herbs >= v.reqAmt) { herbs -= v.reqAmt; gold += v.reward; paid = true; }
+        else if (v.reqType == 1 && potions >= v.reqAmt) { potions -= v.reqAmt; gold += v.reward; paid = true; }
+        else if (v.reqType == 2 && mushrooms >= v.reqAmt) { mushrooms -= v.reqAmt; gold += v.reward; paid = true; }
+        else if (v.reqType == 3 && wood >= v.reqAmt) { wood -= v.reqAmt; gold += v.reward; paid = true; }
+        else if (v.reqType == 4) { // any / special
+          if (potions > 0) { potions--; gold += v.reward; paid = true; }
+          else if (herbs >= 1) { herbs--; gold += v.reward / 2; paid = true; }
+        }
+
+        if (paid) {
+          reputation += 1 + (v.minRep > 5 ? 1 : 0);
+          messageTitle = "Trade complete";
+          message = "They leave satisfied. Word will travel.";
+        } else {
+          gold += 4;
+          messageTitle = "A modest sale";
+          message = "You offer a sample and promise more later.";
+        }
+        dialogue = true;
+        // next visitor
+        pickVisitor();
+        saveRequested = true;
+      }
+      break;
+    }
+
     case Screen::LAB:
-      if(y>155 && x<160){if(herbs>=2&&mushrooms>=1){herbs-=2;mushrooms--;potions++;messageTitle="Brew complete";message="One moonroot tonic bubbles into being.";}else{messageTitle="Missing ingredients";message="You need two herbs and one mushroom.";}dialogue=true;saveRequested=true;}
-      else if(y>155){if(gold>=10){gold-=10;reputation++;messageTitle="A curious discovery";message="Your notes reveal a stronger warding pattern.";}else{messageTitle="Not enough gold";message="The research materials cost ten gold.";}dialogue=true;saveRequested=true;}break;
+      if (y > 155 && x < 160) {
+        if (herbs >= 2 && mushrooms >= 1) {
+          herbs -= 2; mushrooms--; potions++;
+          messageTitle = "Brew complete";
+          message = "One moonroot tonic bubbles into being.";
+        } else {
+          messageTitle = "Missing ingredients";
+          message = "You need two herbs and one mushroom.";
+        }
+        dialogue = true; saveRequested = true;
+      } else if (y > 155) {
+        if (gold >= 12) {
+          gold -= 12; reputation++;
+          messageTitle = "Curious discovery";
+          message = "Your notes reveal a stronger warding pattern.";
+        } else {
+          messageTitle = "Not enough gold";
+          message = "Research materials cost twelve gold.";
+        }
+        dialogue = true; saveRequested = true;
+      }
+      break;
+
     case Screen::GARDEN:
-      if(y>155&&x<160){if(seeds){seeds--;messageTitle="Seed planted";message="A moonseed settles into the soft earth.";}else{messageTitle="No seeds";message="Perhaps a visitor will bring some.";}dialogue=true;saveRequested=true;}
-      else if(y>155){herbs+=2;seeds++;messageTitle="Harvest";message="You gathered moon herbs and saved a seed.";dialogue=true;saveRequested=true;}break;
+      if (y > 155 && x < 160) {
+        if (seeds > 0 && gardenStage == 0) {
+          seeds--; gardenStage = 1;
+          messageTitle = "Seed planted";
+          message = "A moonseed settles into the soft earth.";
+        } else if (gardenStage > 0) {
+          messageTitle = "Already growing";
+          message = "Patience. The moon does the rest.";
+        } else {
+          messageTitle = "No seeds";
+          message = "Perhaps a visitor will bring some.";
+        }
+        dialogue = true; saveRequested = true;
+      } else if (y > 155) {
+        if (gardenStage >= 3) {
+          herbs += 3; seeds += 1; gardenStage = 0;
+          messageTitle = "Harvest!";
+          message = "You gathered moon herbs and saved a seed.";
+        } else {
+          messageTitle = "Not ready";
+          message = "The plants need another day or two.";
+        }
+        dialogue = true; saveRequested = true;
+      }
+      break;
+
     case Screen::DEFENSE:
-      if(y>145&&x<160){if(gold>=8&&wood>=1){gold-=8;wood--;wallLevel++;}else{messageTitle="Need supplies";message="A wall costs 8 gold and 1 wood.";dialogue=true;}saveRequested=true;}
-      else if(y>145){if(gold>=14&&potions>=1){gold-=14;potions--;turretLevel++;}else{messageTitle="Need supplies";message="A ward turret costs 14 gold and 1 potion.";dialogue=true;}saveRequested=true;}break;
+      if (y > 145 && x < 160) {
+        if (gold >= 8 && wood >= 1) {
+          gold -= 8; wood--; wallLevel++;
+          messageTitle = "Wall raised";
+          message = "The keep feels a little safer.";
+        } else {
+          messageTitle = "Need supplies";
+          message = "A wall costs 8 gold and 1 wood.";
+        }
+        dialogue = true; saveRequested = true;
+      } else if (y > 145) {
+        if (gold >= 14 && potions >= 1) {
+          gold -= 14; potions--; turretLevel++;
+          messageTitle = "Turret installed";
+          message = "A soft blue light begins to hum.";
+        } else {
+          messageTitle = "Need supplies";
+          message = "A ward turret costs 14 gold and 1 potion.";
+        }
+        dialogue = true; saveRequested = true;
+      }
+      break;
+
     case Screen::BATTLE:
-      if(y>155&&x<160){monsterHp-=2+turretLevel;if(monsterHp<=0){messageTitle="Wave repelled";message="Your ward flares and the creatures retreat.";resolveBattle();}}
-      else if(y>155){resolveBattle();}break;
-    default:break;
+      if (y > 155 && x < 160) {
+        int dmg = 2 + turretLevel;
+        monsterHp -= dmg;
+        if (monsterHp <= 0) {
+          messageTitle = "Wave repelled";
+          message = "Your ward flares and the creatures retreat.";
+          resolveBattle();
+        }
+      } else if (y > 155) {
+        resolveBattle();
+      }
+      break;
+
+    default: break;
   }
 }
-void Game::update(){
+
+void Game::update() {
   dayTick++;
-  if(M5.BtnA.wasPressed()){if(screen==Screen::BATTLE)handleTap(70,180);else screen=Screen::WORLD;}
-  if(M5.BtnB.wasPressed()){if(screen==Screen::BATTLE)handleTap(230,180);else screen=Screen::SHOP;}
-  if(M5.BtnC.wasPressed()){if(screen==Screen::BATTLE)resolveBattle();else if(screen==Screen::WORLD)startNight();else screen=Screen::LAB;}
-  auto t=M5.Touch.getDetail();
-  if(t.wasPressed())handleTap(t.x,t.y);
-  if(screen==Screen::BATTLE && dayTick%110==0){
-    wizardHp-=1;
-    if(wizardHp<=0)resolveBattle();
+  if (M5.BtnA.wasPressed()) {
+    if (screen == Screen::BATTLE) handleTap(70, 180);
+    else screen = Screen::WORLD;
   }
-  if(screen==Screen::WORLD && dayTick>1800){dayTick=0;startNight();}
+  if (M5.BtnB.wasPressed()) {
+    if (screen == Screen::BATTLE) handleTap(230, 180);
+    else screen = Screen::SHOP;
+  }
+  if (M5.BtnC.wasPressed()) {
+    if (screen == Screen::BATTLE) resolveBattle();
+    else if (screen == Screen::WORLD) startNight();
+    else screen = Screen::LAB;
+  }
+
+  auto t = M5.Touch.getDetail();
+  if (t.wasPressed()) handleTap(t.x, t.y);
+
+  if (screen == Screen::BATTLE && dayTick % 100 == 0) {
+    wizardHp -= 1;
+    if (wizardHp <= 0) resolveBattle();
+  }
+  if (screen == Screen::WORLD && dayTick > 2000) {
+    dayTick = 0;
+    startNight();
+  }
 }
