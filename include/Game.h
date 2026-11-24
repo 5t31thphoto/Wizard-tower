@@ -1,5 +1,7 @@
 #pragma once
 #include <M5Unified.h>
+#include "Sprites.h"
+#include "RealSprites.h"
 
 enum class Screen : uint8_t { WORLD, SHOP, LAB, GARDEN, DEFENSE, BATTLE, JOURNAL };
 

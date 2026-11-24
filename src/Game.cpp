@@ -58,77 +58,34 @@ void Game::drawButton(M5GFX& d, int x, int y, int w, int h, const char* label, u
 
 // Tiny procedural visitor (roughly 14-18 px tall)
 void Game::drawTinyVisitor(M5GFX& d, int cx, int cy, uint8_t icon) {
-  // body base
-  uint16_t body = 0x6A0D, head = COL_SKIN, accent = COL_PLUM;
-  switch(icon) {
-    case 0: case 1: // normal humans
-      body = 0x6A0D; head = COL_SKIN; accent = COL_PLUM; break;
-    case 2: // peddler
-      body = 0x8A22; head = COL_SKIN; accent = COL_GOLD; break;
-    case 3: // mushroom guy
-      body = COL_MOSS; head = 0xA800; accent = 0xF800; break;
-    case 4: // tinkerer
-      body = 0x5A86; head = COL_SKIN; accent = 0xC618; break;
-    case 5: // knight-ish
-      body = 0x4A49; head = COL_SKIN; accent = 0x8410; break;
-    case 6: // witch
-      body = COL_PLUM; head = COL_SKIN; accent = 0xF81F; break;
-    case 7: // quiet / hooded
-      body = 0x3186; head = 0x4208; accent = COL_TEAL; break;
-    case 8: // fungus herbalist
-      body = 0x3D08; head = 0x07E0; accent = 0xF81F; break;
-    case 9: // skeleton mage
-      body = COL_PLUM; head = COL_BONE; accent = COL_TEAL; break;
-    case 10: // treant
-      body = COL_BROWN; head = COL_MOSS; accent = COL_LIME; break;
-    case 11: // ghost
-      body = 0x5ACB; head = 0xADF8; accent = 0xFFFF; break;
-    case 12: // void
-      body = COL_VOID; head = 0x0000; accent = 0xF81F; break;
-    default:
-      body = 0x6A0D; head = COL_SKIN; accent = COL_PLUM; break;
-  }
-
-  // legs / body
-  d.fillRect(cx - 5, cy + 4, 10, 11, body);
-  // head
-  d.fillCircle(cx, cy - 2, 6, head);
-  // hat / feature
-  if (icon == 0 || icon == 1 || icon == 5) { // simple hat
-    d.fillTriangle(cx - 7, cy - 5, cx, cy - 14, cx + 7, cy - 5, accent);
-  } else if (icon == 3 || icon == 8) { // mushroom cap
-    d.fillCircle(cx, cy - 6, 8, head);
-    d.fillRect(cx - 8, cy - 6, 16, 4, head);
-  } else if (icon == 9) { // skull glow
-    d.fillCircle(cx - 2, cy - 3, 1, COL_TEAL);
-    d.fillCircle(cx + 2, cy - 3, 1, COL_TEAL);
-  } else if (icon == 11) { // soft glow
-    d.drawCircle(cx, cy - 2, 8, 0x7DFF);
-  } else if (icon == 12) { // void eyes
-    d.fillCircle(cx - 2, cy - 3, 2, 0xF81F);
-    d.fillCircle(cx + 2, cy - 3, 2, 0xF81F);
-  } else {
-    d.fillTriangle(cx - 6, cy - 4, cx, cy - 12, cx + 6, cy - 4, accent);
-  }
-  // arms suggestion
-  d.drawFastHLine(cx - 8, cy + 6, 4, body);
-  d.drawFastHLine(cx + 4, cy + 6, 4, body);
+  // Real extracted sprites from the user's art sheets
+  static const uint16_t* const table[] = {
+    RealSprites::mara,          // 0 Mara
+    RealSprites::nell,          // 1 Nell
+    RealSprites::wizardtype,    // 2 Pipwick
+    RealSprites::spore,         // 3 Bramble
+    RealSprites::wizardtype,    // 4 Orrin
+    RealSprites::whitebeard,    // 5 Rowan
+    RealSprites::madamemoth,    // 6 Madame Moth
+    RealSprites::quietguest,    // 7 Quiet Guest
+    RealSprites::spore,         // 8 Spore
+    RealSprites::bonewhisper,   // 9 Bonewhisper
+    RealSprites::mossback,      // 10 Mossback
+    RealSprites::ladypale,      // 11 Lady Pale
+    RealSprites::plague,        // 12 Voidling
+    RealSprites::wizardtype     // 13 fallback
+  };
+  if (icon >= 14) icon = 13;
+  RealSprites::blit(d, cx - 16, cy - 20, table[icon]);
 }
 
 void Game::drawTinyMonster(M5GFX& d, int x, int y, uint8_t type) {
-  if (type == 0) { // slime
-    d.fillCircle(x, y, 7, 0x07E0);
-    d.fillCircle(x - 2, y - 2, 2, 0x0000);
-    d.fillCircle(x + 3, y - 1, 2, 0x0000);
-  } else if (type == 1) { // bone
-    d.fillCircle(x, y, 6, COL_BONE);
-    d.fillCircle(x - 2, y - 2, 1, COL_TEAL);
-    d.fillCircle(x + 2, y - 2, 1, COL_TEAL);
-  } else { // shadow
-    d.fillCircle(x, y, 7, COL_VOID);
-    d.fillCircle(x - 2, y - 1, 2, 0xF81F);
-    d.fillCircle(x + 2, y - 1, 2, 0xF81F);
-  }
+  RealSprites::blit(d, x - 16, y - 20, RealSprites::slime);
+}
+
+;
+  if (type > 2) type = 2;
+  Sprites::blit(d, x - 6, y - 8, table[type]);
 }
 
 void Game::drawHeader(M5GFX& d) {

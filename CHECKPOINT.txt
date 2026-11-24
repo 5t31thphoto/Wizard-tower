@@ -1,0 +1,10 @@
+Wizard's Keep — Checkpoint 0.2.1 (Sprites)
+
+What changed since 0.2.0:
+- Real 12×16 pixel sprites for all 14 visitors and 3 monster types.
+- Sprites stored in PROGMEM (Sprites.h) so they cost almost no RAM.
+- Transparent blit routine draws only non-zero pixels.
+- Shop visitors and night monsters now use the new sprites instead of pure procedural shapes.
+- Still extremely lightweight — each sprite is only 384 bytes in flash.
+
+The sprites are intentionally chunky and readable at the tiny size required by the 320×240 screen.
