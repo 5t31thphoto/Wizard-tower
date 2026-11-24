@@ -83,10 +83,7 @@ void Game::drawTinyMonster(M5GFX& d, int x, int y, uint8_t type) {
   RealSprites::blit(d, x - 16, y - 20, RealSprites::slime);
 }
 
-;
-  if (type > 2) type = 2;
-  Sprites::blit(d, x - 6, y - 8, table[type]);
-}
+
 
 void Game::drawHeader(M5GFX& d) {
   d.fillRect(0, 0, 320, 24, COL_INK);
