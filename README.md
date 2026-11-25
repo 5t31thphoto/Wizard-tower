@@ -24,7 +24,8 @@ a new game called
 A cozy top-down woodland wizard RPG with a character-driven shop loop by day and a compact keep-defense encounter by night.
 
 
-                                           ```           
+                                              
+```                                         
 * *.:........ ..  ....................# .::* *          *    ..          .
 :......... ...... ..::......:......::. :*:::..#*   .    *.                
 :.. :..... .  ..........::................::::.:       ...                
